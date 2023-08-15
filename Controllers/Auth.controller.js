@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const moongoose=require('mongoose')
+
 
 const AuthRouter = express.Router();
 const UserModel = require('../Models/Users.model');
@@ -61,7 +63,7 @@ AuthRouter.post('/forgot-password', async (req, res) => {
     }
 
     const token = jwt.sign({ email: user.email, id: user._id }, JWT_SECRET, {
-      expiresIn: '5m',
+      expiresIn: '15m',
     });
 
     const resetLink = `http://localhost:5000/reset-password/${user._id}/${token}`;
@@ -98,11 +100,13 @@ AuthRouter.post('/forgot-password', async (req, res) => {
 
 
 // Reset Password
-AuthRouter.get('/reset-password', async (req, res) => {
-  const { id, token } = req.query;
 
+AuthRouter.post('/reset-password', async (req, res) => {
+  const { id, token } = req.query;
+// console.log(id)
   try {
-    const user = await UserModel.findOne({ email: id.toLowerCase() }); 
+    const user = await UserModel.findOne({ _id: new moongoose.Types.ObjectId(id) });
+    // console.log(user)
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -116,7 +120,7 @@ AuthRouter.get('/reset-password', async (req, res) => {
         return res.status(401).json({ message: 'Unauthorized access' });
       }
 
-      const { password } = req.body; 
+      const { password } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
 
       user.password = hashedPassword;
